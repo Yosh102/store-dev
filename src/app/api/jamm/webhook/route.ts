@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 署名検証（本番だけ有効でもOK）
+    // 署名検証（本番だけ有効）
     if (process.env.NODE_ENV === 'production') {
       const sig = message.signature
       jamm.webhook.verify({
@@ -28,9 +28,9 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const got = jamm.webhook.parse({
+    // ✅ parse には data だけ渡す
+     const got: any = jamm.webhook.parse({
       data: message,
-      signature: message.signature,
     })
 
     console.log('[jamm webhook] parsed:', got)
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
       console.log('[jamm webhook] order marked as paid:', orderDocId)
     }
-
+    
     return new Response('ok')
   } catch (e) {
     console.error('[jamm webhook] error', e)
