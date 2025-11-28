@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../../.."
+		},
+		{
+			"path": "../../../../Flick"
+		},
+		{
+			"path": "../../../../Live"
+		},
+		{
+			"path": "../../../../MLeagueSokuhou"
+		}
+	],
+	"settings": {}
+}
