@@ -19,31 +19,37 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 署名検証（本番だけ有効）
+    // --- ① 署名検証（本番のみ）---
     if (process.env.NODE_ENV === 'production') {
-      const sig = message.signature
       jamm.webhook.verify({
         data: message,
-        signature: sig,
+        signature: message.signature,
       })
     }
 
-    // ✅ parse には data だけ渡す
-     const got: any = jamm.webhook.parse({
-      data: message,
-    })
+    // --- ② parse（署名は本番のみ）---
+    const got =
+      process.env.NODE_ENV === 'production'
+        ? jamm.webhook.parse({
+            data: message,
+            signature: message.signature,
+          })
+        : jamm.webhook.parse({
+            data: message,
+          })
 
     console.log('[jamm webhook] parsed:', got)
 
-    if (got.eventType === 'EVENT_TYPE_CHARGE_SUCCESS') {
-      const charge = got.content as any
-      const jammChargeId = charge.id as string
+    // --- ③ イベントタイプ確認（event_type）---
+    if (got.event_type === 'EVENT_TYPE_CHARGE_SUCCESS') {
+      const charge = got.content
+      const jammChargeId = charge.id
       const orderDocId = `jamm_${jammChargeId}`
 
       await adminDb.collection('orders').doc(orderDocId).set(
         {
           paymentStatus: 'paid',
-          status: 'paid',
+          status: 'completed',
           updatedAt: new Date(),
           source: 'jamm-webhook',
         },
@@ -52,7 +58,7 @@ export async function POST(req: NextRequest) {
 
       console.log('[jamm webhook] order marked as paid:', orderDocId)
     }
-    
+
     return new Response('ok')
   } catch (e) {
     console.error('[jamm webhook] error', e)
